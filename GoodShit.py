@@ -22,6 +22,7 @@ class GoodShit:
         self.semi_joins = semi_joins
 
     def loop_iterations(self, max_iteration_number: int):
+        prev_semijoins = {}
         excluded_indexes = []
         for iteration in range(1, max_iteration_number + 1):
             sigmas = HashTable(self.sigma_attributes, ['Atrybut', 'SF'])
@@ -62,6 +63,7 @@ class GoodShit:
             winner_left = winner_full_code.split(' ')[0]
             winner_right = winner_full_code.split(' ')[2]
             winner_variable = winner_full_code.split(' ')[1]
+            prev_semijoins[winner_left[:2]+winner_variable+winner_right[:2]] = get_val(self.relations, winner_right, winner_variable)
 
             winner_relation = copy.copy(self.relations[winner_left])
             winner_relation.id = winner_relation.id + '|'
@@ -71,10 +73,14 @@ class GoodShit:
             print(winner_full_code + ' -> ' + winner_full_code.split(' ')[0] + 'I')
             winner_relation.cardinal = semi_joins_in_iteration[winner_full_code, 'EFEKT']
             # temp = get_sf(winner_left, winner_variable, sigmas) * get_val(self.relations, winner_right, winner_variable)
+            
             # val update
-            winner_relation['VAL', winner_variable] = \
-                get_sf(winner_left, winner_variable, sigmas) * get_val(self.relations, winner_right,
-                                                                        winner_variable)
+            # if previously semijoin was in opposite order (R1 R2 on attribute A)
+            # when we're doing semijoin R2 R1 on attribute A - it will have the same number of values as in previous semijoin
+            if winner_right[:2]+winner_variable+winner_left[:2] in prev_semijoins.keys():                
+                winner_relation['VAL', winner_variable] = get_val(self.relations, winner_right,winner_variable)
+            else:
+                winner_relation['VAL', winner_variable] = get_sf(winner_left, winner_variable, sigmas) * get_val(self.relations, winner_right,winner_variable)
 
             new_sigma = winner_relation.hash_table.table['VAL'][winner_variable] / self.domains[winner_variable]
 
